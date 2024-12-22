@@ -32,7 +32,7 @@ namespace labCountry
         {
             try
             {
-                string sql = "SELECT name_ FROM country GROUP BY name_";
+                string sql = "SELECT name_ FROM continent  GROUP BY name_";
                 NpgsqlConnection conn = new NpgsqlConnection(connectionString);
                 NpgsqlCommand comm = new NpgsqlCommand(sql, conn);
                 DataTable stable = new DataTable();
@@ -51,42 +51,172 @@ namespace labCountry
 
             try
             {
-                string sql = "SELECT id as Айди,name_ as Название, capital as Столица, population as Население,continent_id as Айди_континент  FROM country";
+                string sql = "SELECT name_ FROM form_of_government GROUP BY name_";
                 NpgsqlConnection conn = new NpgsqlConnection(connectionString);
                 NpgsqlCommand comm = new NpgsqlCommand(sql, conn);
-                DataTable table = new DataTable();
-                NpgsqlDataAdapter adapter = new NpgsqlDataAdapter(comm);
-                adapter.Fill(table);
-                dataGridView1.DataSource = table;
-                dataGridView1.Columns[0].Visible = false;
+                DataTable stable = new DataTable();
+                NpgsqlDataAdapter sadapter = new NpgsqlDataAdapter(comm);
+                sadapter.Fill(stable);
+                comboBox2.Items.Clear();
+                foreach (DataRow row in stable.Rows)
+                {
+                    comboBox2.Items.Add(row["name_"].ToString());
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "error", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+
+            try
+            {
+                string sql = @"
+        SELECT 
+            c.name_ AS Название,
+            c.capital AS Столица,
+            c.population AS Население,
+            co.name_ AS Континент,
+            fg.name_ AS Форма_правления
+        FROM 
+            Country c
+        JOIN 
+            Continent co ON c.continent_id = co.id
+        JOIN 
+            Form_of_government fg ON c.Form_of_government_id = fg.id";
+
+                using (NpgsqlConnection conn = new NpgsqlConnection(connectionString))
+                {
+                    NpgsqlCommand comm = new NpgsqlCommand(sql, conn);
+                    DataTable table = new DataTable();
+                    NpgsqlDataAdapter adapter = new NpgsqlDataAdapter(comm);
+                    adapter.Fill(table);
+                    dataGridView1.DataSource = table;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
         }
 
         private void comboBox1_TextChanged(object sender, EventArgs e)
         {
             string sql = "";
-            if (comboBox1.Text == "")
-                 sql = "SELECT id as Айди,name_ as Название, capital as Столица, population as Население,continent_id as Айди_континент  FROM country";
+            if (string.IsNullOrEmpty(comboBox1.Text))
+            {
+                sql = @"
+            SELECT 
+                c.name_ AS Название,
+                c.capital AS Столица,
+                c.population AS Население,
+                co.name_ AS Континент,
+                fg.name_ AS Форма_правления
+            FROM 
+                Country c
+            JOIN 
+                Continent co ON c.continent_id = co.id
+            JOIN 
+                Form_of_government fg ON c.Form_of_government_id = fg.id";
+            }
             else
-                 sql = $"SELECT id as Айди,name_ as Название, capital as Столица, population as Население, continent_id as Айди_континента  FROM country WHERE name_ = '{comboBox1.Text}'"; 
+            {
+                sql = @"
+            SELECT 
+                c.name_ AS Название,
+                c.capital AS Столица,
+                c.population AS Население,
+                co.name_ AS Континент,
+                fg.name_ AS Форма_правления
+            FROM 
+                Country c
+            JOIN 
+                Continent co ON c.continent_id = co.id
+            JOIN 
+                Form_of_government fg ON c.Form_of_government_id = fg.id
+            WHERE 
+                co.name_ = @continentName";
+            }
+
             try
             {
-                NpgsqlConnection conn = new NpgsqlConnection(connectionString);
-                NpgsqlCommand comm = new NpgsqlCommand(sql, conn);
-                DataTable table = new DataTable();
-                NpgsqlDataAdapter adapter = new NpgsqlDataAdapter(comm);
-                adapter.Fill(table);
-                dataGridView1.DataSource = table;
-                dataGridView1.Columns[0].Visible = false;
-                conn.Close();
+                using (NpgsqlConnection conn = new NpgsqlConnection(connectionString))
+                {
+                    NpgsqlCommand comm = new NpgsqlCommand(sql, conn);
+                    if (!string.IsNullOrEmpty(comboBox1.Text))
+                    {
+                        comm.Parameters.AddWithValue("@continentName", comboBox1.Text);
+                    }
+
+                    DataTable table = new DataTable();
+                    NpgsqlDataAdapter adapter = new NpgsqlDataAdapter(comm);
+                    adapter.Fill(table);
+                    dataGridView1.DataSource = table;
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void comboBox2_TextChanged(object sender, EventArgs e)
+        {
+            string sql = "";
+            if (string.IsNullOrEmpty(comboBox1.Text))
+            {
+                sql = @"
+            SELECT 
+                c.name_ AS Название,
+                c.capital AS Столица,
+                c.population AS Население,
+                co.name_ AS Континент,
+                fg.name_ AS Форма_правления
+            FROM 
+                Country c
+            JOIN 
+                Continent co ON c.continent_id = co.id
+            JOIN 
+                Form_of_government fg ON c.Form_of_government_id = fg.id";
+            }
+            else
+            {
+                sql = @"
+            SELECT 
+                c.name_ AS Название,
+                c.capital AS Столица,
+                c.population AS Население,
+                co.name_ AS Континент,
+                fg.name_ AS Форма_правления
+            FROM 
+                Country c
+            JOIN 
+                Continent co ON c.continent_id = co.id
+            JOIN 
+                Form_of_government fg ON c.Form_of_government_id = fg.id
+            WHERE 
+                fg.name_ = @FormName";
+            }
+
+            try
+            {
+                using (NpgsqlConnection conn = new NpgsqlConnection(connectionString))
+                {
+                    NpgsqlCommand comm = new NpgsqlCommand(sql, conn);
+                    if (!string.IsNullOrEmpty(comboBox1.Text))
+                    {
+                        comm.Parameters.AddWithValue("@FormName", comboBox2.Text);
+                    }
+
+                    DataTable table = new DataTable();
+                    NpgsqlDataAdapter adapter = new NpgsqlDataAdapter(comm);
+                    adapter.Fill(table);
+                    dataGridView1.DataSource = table;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
